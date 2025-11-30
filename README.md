@@ -216,6 +216,43 @@ Both history endpoints return data in TradingView Lightweight Charts format:
 
 **Recommendation**: Use `/history/sql` for production queries.
 
+---
+
+### Important: Time Bucketing Behavior
+
+**Candles are aligned to fixed time boundaries**, not to your query timestamps.
+
+**Example with 1-minute (`1m`) interval:**
+
+```bash
+# Query from 10:35:22 to 10:37:45
+curl "http://localhost:8080/history?symbol=BTC-USD&interval=1m&from=1732968922&to=1732969065"
+```
+
+**Buckets created:**
+- `10:35:00` - Contains events from 10:35:22 to 10:35:59 (38 seconds) → **lower volume**
+- `10:36:00` - Contains events from 10:36:00 to 10:36:59 (60 seconds) → **full volume**
+- `10:37:00` - Contains events from 10:37:00 to 10:37:45 (45 seconds) → **partial volume**
+
+**Why?** The bucketing algorithm uses: `(timestamp / intervalSeconds) * intervalSeconds`
+
+This rounds down to the nearest interval boundary:
+- `1732968922 / 60 * 60 = 1732968900` (10:35:00)
+- `1732969065 / 60 * 60 = 1732969020` (10:37:00)
+
+**Best Practice:** Use exact bucket boundaries for consistent volumes:
+
+```bash
+# Align to minute boundaries (:00 seconds)
+NOW=$(date +%s)
+FROM=$(( (NOW - 300) / 60 * 60 ))  # Round down to nearest minute
+TO=$(( NOW / 60 * 60 ))             # Round down to nearest minute
+
+curl "http://localhost:8080/history/sql?symbol=BTC-USD&interval=1m&from=$FROM&to=$TO"
+```
+
+This ensures each candle represents a complete time period with consistent event counts.
+
 ## 🧪 Running Tests
 
 ### Run All Tests
