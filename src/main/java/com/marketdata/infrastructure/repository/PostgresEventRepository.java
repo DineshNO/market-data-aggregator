@@ -21,28 +21,28 @@ import java.util.List;
 public class PostgresEventRepository implements EventRepository {
     
     private static final String AGGREGATE_CANDLES_SQL = """
-        SELECT
-            bucket_time,
-            (first_bid + first_ask) / 2.0 AS open,
-            MAX((bid + ask) / 2.0) AS high,
-            MIN((bid + ask) / 2.0) AS low,
-            (last_bid + last_ask) / 2.0 AS close,
-            COUNT(*) AS volume
-        FROM (
+        WITH bucketed_events AS (
             SELECT
                 FLOOR(timestamp / :intervalSeconds) * :intervalSeconds AS bucket_time,
                 bid,
                 ask,
-                FIRST_VALUE(bid) OVER (PARTITION BY FLOOR(timestamp / :intervalSeconds) ORDER BY timestamp) AS first_bid,
-                FIRST_VALUE(ask) OVER (PARTITION BY FLOOR(timestamp / :intervalSeconds) ORDER BY timestamp) AS first_ask,
-                FIRST_VALUE(bid) OVER (PARTITION BY FLOOR(timestamp / :intervalSeconds) ORDER BY timestamp DESC) AS last_bid,
-                FIRST_VALUE(ask) OVER (PARTITION BY FLOOR(timestamp / :intervalSeconds) ORDER BY timestamp DESC) AS last_ask
+                timestamp,
+                ROW_NUMBER() OVER (PARTITION BY FLOOR(timestamp / :intervalSeconds) ORDER BY timestamp) AS rn_first,
+                ROW_NUMBER() OVER (PARTITION BY FLOOR(timestamp / :intervalSeconds) ORDER BY timestamp DESC) AS rn_last
             FROM bid_ask_events
             WHERE symbol = :symbol
               AND timestamp >= :from
               AND timestamp <= :to
-        ) AS bucketed
-        GROUP BY bucket_time, first_bid, first_ask, last_bid, last_ask
+        )
+        SELECT
+            bucket_time,
+            (MAX(CASE WHEN rn_first = 1 THEN bid END) + MAX(CASE WHEN rn_first = 1 THEN ask END)) / 2.0 AS open,
+            MAX((bid + ask) / 2.0) AS high,
+            MIN((bid + ask) / 2.0) AS low,
+            (MAX(CASE WHEN rn_last = 1 THEN bid END) + MAX(CASE WHEN rn_last = 1 THEN ask END)) / 2.0 AS close,
+            COUNT(*) AS volume
+        FROM bucketed_events
+        GROUP BY bucket_time
         ORDER BY bucket_time
         """;
     
