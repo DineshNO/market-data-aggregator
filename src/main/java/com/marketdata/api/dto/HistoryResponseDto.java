@@ -32,6 +32,9 @@ public class HistoryResponseDto {
     @JsonProperty("v")
     private List<Long> volume;
 
+    @JsonProperty("errmsg")
+    private String errorMessage;
+
     public HistoryResponseDto() {
         this.status = "ok";
         this.timestamps = new ArrayList<>();
@@ -58,6 +61,7 @@ public class HistoryResponseDto {
     public static HistoryResponseDto error(String message) {
         var dto = new HistoryResponseDto();
         dto.status = "error";
+        dto.errorMessage = message;
         return dto;
     }
 
@@ -81,4 +85,7 @@ public class HistoryResponseDto {
 
     public List<Long> getVolume() { return volume; }
     public void setVolume(List<Long> volume) { this.volume = volume; }
+
+    public String getErrorMessage() { return errorMessage; }
+    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
 }

@@ -23,12 +23,12 @@ public class PostgresEventRepository implements EventRepository {
     private static final String AGGREGATE_CANDLES_SQL = """
         WITH bucketed_events AS (
             SELECT
-                FLOOR(timestamp / :intervalSeconds) * :intervalSeconds AS bucket_time,
+                (timestamp / :intervalSeconds) * :intervalSeconds AS bucket_time,
                 bid,
                 ask,
                 timestamp,
-                ROW_NUMBER() OVER (PARTITION BY FLOOR(timestamp / :intervalSeconds) ORDER BY timestamp) AS rn_first,
-                ROW_NUMBER() OVER (PARTITION BY FLOOR(timestamp / :intervalSeconds) ORDER BY timestamp DESC) AS rn_last
+                ROW_NUMBER() OVER (PARTITION BY (timestamp / :intervalSeconds) ORDER BY timestamp) AS rn_first,
+                ROW_NUMBER() OVER (PARTITION BY (timestamp / :intervalSeconds) ORDER BY timestamp DESC) AS rn_last
             FROM bid_ask_events
             WHERE symbol = :symbol
               AND timestamp >= :from

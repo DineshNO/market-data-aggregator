@@ -120,4 +120,35 @@ class HistoryControllerTest {
         controller.history("BTC-USD", "1h", 1620000000L, 1620000600L);
         verify(queryHistoryUseCase).getHistory("BTC-USD", Timeframe.H1, 1620000000L, 1620000600L);
     }
+
+    @Test
+    void testHistory_InvalidInterval() {
+        // When/Then - Invalid interval should throw exception
+        IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> controller.history("BTC-USD", "15", 1620000000L, 1620000600L)
+        );
+        assertTrue(ex.getMessage().contains("Invalid interval: 15"));
+        assertTrue(ex.getMessage().contains("Supported formats"));
+    }
+
+    @Test
+    void testHistory_InvalidTimeRange() {
+        // When/Then - 'to' before 'from' should throw exception
+        IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> controller.history("BTC-USD", "1m", 1620000600L, 1620000000L)
+        );
+        assertTrue(ex.getMessage().contains("'to' timestamp must be >= 'from' timestamp"));
+    }
+
+    @Test
+    void testHistoryWithSql_InvalidInterval() {
+        // When/Then - Invalid interval should throw exception
+        IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> controller.historyWithSql("BTC-USD", "2m", 1620000000L, 1620000600L)
+        );
+        assertTrue(ex.getMessage().contains("Invalid interval: 2m"));
+    }
 }

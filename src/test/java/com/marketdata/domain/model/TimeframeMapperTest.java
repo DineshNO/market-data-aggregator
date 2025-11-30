@@ -60,4 +60,31 @@ class TimeframeMapperTest {
         );
         assertTrue(ex.getMessage().contains("cannot be null or empty"));
     }
+
+    @Test
+    void testParseNumericInterval() {
+        // Test numeric values like "15" which are invalid
+        IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> TimeframeMapper.parse("15")
+        );
+        assertTrue(ex.getMessage().contains("Invalid interval: 15"));
+        assertTrue(ex.getMessage().contains("Supported formats"));
+    }
+
+    @Test
+    void testParseInvalidFormats() {
+        // Test various invalid formats
+        String[] invalidIntervals = {"2m", "10m", "3h", "2d", "15", "1min", "5minutes"};
+        
+        for (String interval : invalidIntervals) {
+            IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> TimeframeMapper.parse(interval),
+                "Expected exception for interval: " + interval
+            );
+            assertTrue(ex.getMessage().contains("Invalid interval"));
+            assertTrue(ex.getMessage().contains("Supported formats"));
+        }
+    }
 }
