@@ -34,6 +34,3 @@ logs/
 *.bak
 *.swp
 *~
-
-# Documentation (temporary)
-*.md
